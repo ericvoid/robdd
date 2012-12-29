@@ -14,7 +14,7 @@ def queens(n):
 
     solution = Robdd.true()
 
-    # put one queen in each line
+    # create the rule "there must be at least one queen at each line"
     for j in range(1, n + 1):
         line = Robdd.false()
 
@@ -24,83 +24,65 @@ def queens(n):
 
         solution = synth(solution, Bdd.AND, line)
 
-    # create one variable for each boad position
-    board = {}
+    # create a list of "NOT" expressions
+    not_expressions = {}
     for j in range(1, n + 1):
         for i in range(1, n + 1):
-            board[(i, j)] = Robdd.make_not_x(index_of(i, j))
+            not_expressions[(i, j)] = Robdd.make_not_x(index_of(i, j))
 
     # create conditions for each position
     for j in range(1, n + 1):
         for i in range(1, n + 1):
-            queen = queen_conditions(board, i, j, n)
+            queen = queen_conditions(not_expressions, i, j, n)
             solution = synth(solution, Bdd.AND, queen)
     
-    # print "   vars:", len(solution.variables)
-    # print "   len:", solution.solutions_len()
-    # print "   sol:", len(solution.get_solutions())
-    # print "nodes:"
-    # print solution.list()
-    # print "tree:"
-    # print solution
-
     return solution
 
 
-def queen_conditions(board, i, j, n) :
+def queen_conditions(not_x, i, j, n) :
     queen = Robdd.make_x(index_of(i, j))
-    
-    a = Robdd.true()
-    b = Robdd.true()
-    c = Robdd.true()
-    d = Robdd.true()
-
-    expression = Robdd()
 
     # creates the rule "none in the same column"
+    a = Robdd.true()
     for y in range(1, n + 1) :
         if y == j : continue
 
-        a_ = synth(queen, Bdd.IMPL, board[(i, y)])
-        a = synth(a, Bdd.AND, a_)
+        a_ = synth(queen, Bdd.IMPL, not_x[(i, y)])
+        a  = synth(a, Bdd.AND, a_)
 
     # creates the rule "none in the same line"
+    b = Robdd.true()
     for x in range(1, n + 1) :
         if x == i : continue
 
-        b_ = synth(queen, Bdd.IMPL, board[(x, j)])
-        b = synth(b, Bdd.AND, b_)
+        b_ = synth(queen, Bdd.IMPL, not_x[(x, j)])
+        b  = synth(b, Bdd.AND, b_)
 
     # creates the rule "none in the diagonals"
+    c = Robdd.true()
     x = 1
-    while True :
-        if (i - x) < 1 or (j - x) < 1 : break
-
-        c_ = synth(queen, Bdd.IMPL, board[(i - x, j - x)])
+    while (i - x) > 0 and (j - x) > 0 :
+        c_ = synth(queen, Bdd.IMPL, not_x[(i - x, j - x)])
         c  = synth(c, Bdd.AND, c_)
         x += 1
 
     x = 1
-    while True :
-        if (i + x) > n or (j + x) > n : break
-
-        c_ = synth(queen, Bdd.IMPL, board[(i + x, j + x)])
+    while (i + x) <= n and (j + x) <= n :
+        c_ = synth(queen, Bdd.IMPL, not_x[(i + x, j + x)])
         c  = synth(c, Bdd.AND, c_)
         x += 1
 
+    d = Robdd.true()
     x = 1
-    while True :
-        if (i - x) < 1 or (j + x) > n : break
-
-        d_ = synth(queen, Bdd.IMPL, board[(i - x, j + x)])
+    while (i - x) > 0 and (j + x) <= n : 
+        d_ = synth(queen, Bdd.IMPL, not_x[(i - x, j + x)])
         d  = synth(d, Bdd.AND, d_)
         x += 1
 
     x = 1
-    while True :
-        if (i + x) > n or (j - x) < 1 : break
+    while (i + x) <= n and (j - x) > 0 :
 
-        d_ = synth(queen, Bdd.IMPL, board[(i + x, j - x)])
+        d_ = synth(queen, Bdd.IMPL, not_x[(i + x, j - x)])
         d  = synth(d, Bdd.AND, d_)
         x += 1
 
@@ -111,12 +93,13 @@ def queen_conditions(board, i, j, n) :
 
 def index_of(i, j) :
     return i + ((j - 1) * n)
+    
 
 
 if __name__ == "__main__":
     from time import time
 
-    for n in range(1,15):
+    for n in range(1,9):
         start = time()
 
         result = queens(n)
@@ -124,7 +107,8 @@ if __name__ == "__main__":
         elapsed = time() - start
 
         print "N =", n
-        print "   S =", result.solutions_len()
-        print "   t = %.2fs" % elapsed
+        print "   solutions       =", result.solutions_len()
+        print "   elapsed time    = %.2fs" % elapsed
+        print "   variables       =", len(result.variables)
         print "   nodes (reduced) =", result.insert_distinct
         print "   nodes (attempts)=", result.insert_attempts
