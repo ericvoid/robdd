@@ -4,18 +4,17 @@
 from robdd import Robdd
 from operators import Bdd
 
-
+# a shorthand function to abstract Synthesis class usage
 def synthesize(expression_a, operator, expression_b):
     s = Synthesis()
 
     s.expression_a = expression_a
     s.expression_b = expression_b
-    s.operator = operator
+    s.operator     = operator
 
-    s.synthesize()
-    return s.result
-
-
+    return s.synthesize()
+    
+    
 
 # makes an operation over two expressions with an operator
 class Synthesis:
@@ -28,8 +27,6 @@ class Synthesis:
         self.expression_b = None
 
         self.result = None
-
-        self.errors = []
 
 
     def synthesize(self):
@@ -49,7 +46,7 @@ class Synthesis:
 
     def _synth(self, a_index, b_index) :
 
-        if self.has_memo((a_index, b_index)) :
+        if (a_index, b_index) in self.memo :
             return self.memo[(a_index, b_index)]
 
         # print "_synth {}, {}".format(a_index, b_index)
@@ -104,9 +101,6 @@ class Synthesis:
             return a == b
 
         raise "Unknown operator."
-
-    def has_memo(self, tuple) :
-        return tuple in self.memo
 
     def _is_leaf(self, index) :
         return index == 0 or index == 1
